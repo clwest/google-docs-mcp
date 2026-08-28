@@ -1,0 +1,21 @@
+# Credentials — under no circumstances commit
+client_secret*.json
+token*.json
+credentials*.json
+.env
+.env.*
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+build/
+dist/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp

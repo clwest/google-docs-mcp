@@ -1,0 +1,34 @@
+[project]
+name = "google-docs-mcp"
+version = "0.1.0"
+description = "MCP server that reads and edits Google Docs bodies. Fills the gap in the Google Drive connector, which cannot edit document content."
+requires-python = ">=3.11"
+readme = "README.md"
+
+# Pin ranges chosen deliberately.
+#
+# mcp>=2,<3
+#   FastMCP was removed in 2.0. This server targets the 2.x MCPServer API.
+#   Do not pin below 2 to "make examples work" — those examples are stale.
+#
+# google-* pins
+#   These are the current majors as of 2026-08-28. Google's API client
+#   libraries follow semver reasonably; if a customer install breaks, look
+#   at these first.
+dependencies = [
+    "mcp>=2,<3",
+    "google-api-python-client>=2,<3",
+    "google-auth>=2,<3",
+    "google-auth-oauthlib>=1,<2",
+]
+
+[project.scripts]
+google-docs-mcp = "google_docs_mcp.__main__:main"
+google-docs-mcp-cli = "google_docs_mcp.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/google_docs_mcp"]
