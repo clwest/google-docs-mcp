@@ -1,4 +1,4 @@
-"""MCP server: three Docs tools and three Sheets tools on one credential.
+"""MCP server: three Docs tools and five Sheets tools on one credential.
 
 Notes for future readers:
 
@@ -14,9 +14,11 @@ Notes for future readers:
   3. Return values are strings. Callers get plain text; no output schema
      is inferred by the SDK when structured_output is False.
 
-  4. Sheets tools deliberately do not create spreadsheets, create tabs,
-     clear ranges, or delete anything. If a tab does not exist the API
-     error is surfaced unchanged. See sheets_ops.py for the reasoning.
+  4. Sheets tools deliberately do not clear ranges or delete anything —
+     no delete_tab, no delete_spreadsheet, no clear_range, no delete_rows.
+     A tool that can blank a tracker will one day blank a tracker. Create
+     is in (2026-09-02 Item 4): create cannot destroy anything, so the
+     line moved to delete, not create. See sheets_ops.py for the reasoning.
 """
 
 from __future__ import annotations
@@ -26,7 +28,13 @@ from mcp.server.mcpserver import MCPServer
 from . import __version__
 from .auth import AuthError, get_docs_service, get_sheets_service
 from .docs_ops import append_text, get_document_text, replace_all_text
-from .sheets_ops import append_row, get_range, update_range
+from .sheets_ops import (
+    append_row,
+    create_spreadsheet,
+    create_tab,
+    get_range,
+    update_range,
+)
 
 server: MCPServer = MCPServer(
     name="google-docs",
@@ -154,7 +162,8 @@ def sheets_update_range(
         "Append one row to the end of a named tab in a Google Sheet. "
         "`sheet_name` is the tab name (e.g. `Targets`), NOT an A1 range. "
         "`values` is a list of strings, one per cell. Returns the A1 range "
-        "the row landed in. Does not create the tab if it is missing."
+        "the row landed in. Does not create the tab if it is missing — use "
+        "`sheets_create_tab` for that."
     ),
     structured_output=False,  # see module docstring
 )
@@ -168,6 +177,46 @@ def sheets_append_row(
         service = get_sheets_service()
         landed = append_row(service, spreadsheet_id, sheet_name, values)
         return f"Appended 1 row at {landed}." if landed else "Appended 1 row."
+    except Exception as exc:
+        return _friendly_error(exc)
+
+
+@server.tool(
+    name="sheets_create_tab",
+    description=(
+        "Add a new tab (worksheet) to an existing Google Sheet. `title` is "
+        "the tab name. Fails with the API's error if a tab with that title "
+        "already exists — no renaming, no suffixing. Returns the new tab's "
+        "sheetId and title."
+    ),
+    structured_output=False,  # see module docstring
+)
+def sheets_create_tab(spreadsheet_id: str, title: str) -> str:
+    """Create a new tab."""
+    try:
+        service = get_sheets_service()
+        sheet_id, returned = create_tab(service, spreadsheet_id, title)
+        return f"Created tab '{returned}' (sheetId={sheet_id})."
+    except Exception as exc:
+        return _friendly_error(exc)
+
+
+@server.tool(
+    name="sheets_create_spreadsheet",
+    description=(
+        "Create a new Google Sheet in Drive root. `title` is the file name. "
+        "Returns the new spreadsheet's id and URL. The file lands in Drive "
+        "root because the `spreadsheets` scope cannot place it in a folder; "
+        "use the Drive connector's `update_file` with `parentId` to move it."
+    ),
+    structured_output=False,  # see module docstring
+)
+def sheets_create_spreadsheet(title: str) -> str:
+    """Create a new spreadsheet."""
+    try:
+        service = get_sheets_service()
+        spreadsheet_id, url = create_spreadsheet(service, title)
+        return f"Created spreadsheet id={spreadsheet_id} url={url}"
     except Exception as exc:
         return _friendly_error(exc)
 

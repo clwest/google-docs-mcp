@@ -250,3 +250,17 @@ exists — this server, three more tools, same day-of-work extension on
 what already exists needs one small custom piece per file type, and
 that piece stays small because deleting and creating live in the
 existing tools.
+
+**The "no create" rule turned out to be over-cautious.** The first
+Sheets pass forbade creating tabs and spreadsheets alongside forbidding
+delete and clear — one omnibus caution against "tools that can blank a
+tracker." Later the same day the customer's own workflow needed a
+tracker created and a scratch tab added, and the Drive connector could
+not do either (it makes empty files but cannot add a tab to an
+existing Sheet). Two more tools went in, `sheets_create_tab` and
+`sheets_create_spreadsheet` — no new scope, no re-consent. The line
+now sits at delete, not at create: **create cannot destroy anything,
+so the caution doesn't apply.** Same server, eight tools. If a future
+"can we add X" question comes up, the test is not "could this cause
+harm in the abstract" but "could this destroy an existing value the
+customer cares about." Create doesn't; delete and clear do.

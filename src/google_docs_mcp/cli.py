@@ -12,7 +12,13 @@ import sys
 
 from .auth import authorize_interactive, get_docs_service, get_sheets_service
 from .docs_ops import append_text, get_document_text, replace_all_text
-from .sheets_ops import append_row, get_range, update_range
+from .sheets_ops import (
+    append_row,
+    create_spreadsheet,
+    create_tab,
+    get_range,
+    update_range,
+)
 
 
 def _cmd_auth(_args: argparse.Namespace) -> int:
@@ -74,6 +80,20 @@ def _cmd_sheets_append(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_sheets_create_tab(args: argparse.Namespace) -> int:
+    service = get_sheets_service()
+    sheet_id, title = create_tab(service, args.spreadsheet_id, args.title)
+    print(f"Created tab '{title}' (sheetId={sheet_id}).")
+    return 0
+
+
+def _cmd_sheets_create_spreadsheet(args: argparse.Namespace) -> int:
+    service = get_sheets_service()
+    spreadsheet_id, url = create_spreadsheet(service, args.title)
+    print(f"Created spreadsheet id={spreadsheet_id} url={url}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="google-docs-mcp-cli")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -119,6 +139,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_sapp.add_argument("sheet_name", help="Tab name, e.g. scratch")
     p_sapp.add_argument("value", nargs="+", help="One argument per cell.")
     p_sapp.set_defaults(func=_cmd_sheets_append)
+
+    p_stab = sub.add_parser("sheet-create-tab", help="Add a new tab to a spreadsheet.")
+    p_stab.add_argument("spreadsheet_id")
+    p_stab.add_argument("title", help="Tab title, e.g. scratch")
+    p_stab.set_defaults(func=_cmd_sheets_create_tab)
+
+    p_ssheet = sub.add_parser(
+        "sheet-create-spreadsheet",
+        help="Create a new spreadsheet in Drive root.",
+    )
+    p_ssheet.add_argument("title", help="Spreadsheet title.")
+    p_ssheet.set_defaults(func=_cmd_sheets_create_spreadsheet)
 
     return parser
 

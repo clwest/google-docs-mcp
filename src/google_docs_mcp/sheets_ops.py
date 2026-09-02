@@ -4,9 +4,10 @@ Kept separate from the MCP server layer so the CLI harness and the tool
 handlers can share the same code, and so tests can exercise them without
 touching MCP transport.
 
-Scope is deliberately small: read a range, overwrite a range, append a row.
-Nothing here creates a spreadsheet, creates a tab, clears a range, or deletes
-anything. A tool that can blank a tracker will one day blank a tracker.
+Scope is deliberately small: read a range, overwrite a range, append a row,
+create a tab, create a spreadsheet. Nothing here clears a range or deletes
+anything. A tool that can blank a tracker will one day blank a tracker;
+create cannot destroy anything, so the line is at delete, not at create.
 """
 
 from __future__ import annotations
@@ -102,3 +103,44 @@ def append_row(
     )
     updates = response.get("updates", {})
     return str(updates.get("updatedRange", ""))
+
+
+def create_tab(service, spreadsheet_id: str, title: str) -> tuple[int, str]:
+    """Add a new tab to an existing spreadsheet. Returns (sheetId, title).
+
+    Fails 400 if a tab with `title` already exists — the API surfaces this;
+    we do not rename or suffix, and we do not swallow it.
+    """
+    if not title:
+        raise ValueError("`title` must be a non-empty string.")
+    request = {"addSheet": {"properties": {"title": title}}}
+    response = (
+        service.spreadsheets()
+        .batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": [request]})
+        .execute()
+    )
+    replies = response.get("replies", [])
+    if not replies:
+        raise RuntimeError("addSheet returned no replies.")
+    props = replies[0].get("addSheet", {}).get("properties", {})
+    sheet_id = int(props.get("sheetId", 0))
+    returned_title = str(props.get("title", title))
+    return sheet_id, returned_title
+
+
+def create_spreadsheet(service, title: str) -> tuple[str, str]:
+    """Create a new spreadsheet in Drive root. Returns (spreadsheetId, URL).
+
+    The `spreadsheets` scope cannot place the file in a folder — moving it
+    is the Drive connector's job (`update_file` with `parentId`). We do not
+    add the Drive scope here just for that; one more scope is one more
+    consent screen, and the connector already covers this.
+    """
+    if not title:
+        raise ValueError("`title` must be a non-empty string.")
+    response = (
+        service.spreadsheets()
+        .create(body={"properties": {"title": title}}, fields="spreadsheetId,spreadsheetUrl")
+        .execute()
+    )
+    return str(response.get("spreadsheetId", "")), str(response.get("spreadsheetUrl", ""))

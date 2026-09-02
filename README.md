@@ -9,7 +9,7 @@ existing Doc or Sheet**. This server fills that one gap. Nothing more.
 
 ## What it exposes
 
-Six tools. That's the whole surface.
+Eight tools. That's the whole surface.
 
 | Tool | What it does |
 |---|---|
@@ -19,12 +19,20 @@ Six tools. That's the whole surface.
 | `sheets_get_range` | Return the rows in an A1 range of a Sheet as tab-separated lines. |
 | `sheets_update_range` | Overwrite an A1 range with a list of rows. Returns how many cells were updated. |
 | `sheets_append_row` | Append one row to the end of a named tab. Returns the range it landed in. |
+| `sheets_create_tab` | Add a new tab to an existing Sheet. Fails if the title already exists. |
+| `sheets_create_spreadsheet` | Create a new Sheet in Drive root. Move it with the Drive connector. |
 
 Not in this server: formatting, tables, images, comments, suggestions,
-creating Docs or Sheets (use the Drive connector), deleting Docs or
-Sheets, clearing or deleting rows, tabs or spreadsheets, and creating
-tabs (do that in the UI). A tool that can blank a tracker will one day
-blank a tracker; those tools deliberately do not exist here.
+deleting Docs, deleting Sheets, clearing ranges, deleting rows, deleting
+tabs. A tool that can blank a tracker will one day blank a tracker;
+those tools deliberately do not exist here. Create is fine — create
+cannot destroy anything, so the line is at delete, not at create.
+
+`sheets_create_spreadsheet` lands the new file in Drive root because the
+`spreadsheets` scope cannot place it in a folder. Move it with the
+stock Drive connector's `update_file` (parentId). We don't add the
+Drive scope here just for this — one more scope is one more consent
+screen, and the connector already covers it.
 
 ## What it is allowed to do to your account
 
@@ -183,6 +191,8 @@ google-docs-mcp-cli append <document_id> <text>
 google-docs-mcp-cli sheet-get <spreadsheet_id> <A1_range>
 google-docs-mcp-cli sheet-update <spreadsheet_id> <A1_range> --row "cell1\tcell2" [--row ...]
 google-docs-mcp-cli sheet-append <spreadsheet_id> <tab_name> cell1 cell2 ...
+google-docs-mcp-cli sheet-create-tab <spreadsheet_id> <title>
+google-docs-mcp-cli sheet-create-spreadsheet <title>
 ```
 
 This is the recommended way to smoke-test against a throwaway doc or a
