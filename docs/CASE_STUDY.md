@@ -222,10 +222,17 @@ an account picker. The right tool was this server; nothing external.
 **What the fix cost.** One session. Three tools added
 (`sheets_get_range`, `sheets_update_range`, `sheets_append_row`), one
 file (`sheets_ops.py`), one refactor to share credential loading
-between Docs and Sheets, one scope added to `SCOPES`, and one
-human-in-the-loop consent re-click. Total server surface went from
-three tools to six on the same OAuth token. Nothing renamed, nothing
-moved.
+between Docs and Sheets, one scope added to `SCOPES`. Total server
+surface went from three tools to six on the same OAuth token. Nothing
+renamed, nothing moved.
+
+Two human steps, not one — a lesson caught the first time the new
+`sheets_get_range` was called and came back with `SERVICE_DISABLED`.
+The OAuth re-consent flow was the obvious human step (add the
+`spreadsheets` scope to the token), so it was the only one written
+into the brief. But **enabling the Sheets API on the Cloud project is
+a separate act**, and Google will not do either implicitly. Any future
+"add API X to this server" task needs to name both.
 
 **What was deliberately not built.** `sheets_clear_range`,
 `sheets_delete_row`, `sheets_delete_tab`, `sheets_create_spreadsheet`,

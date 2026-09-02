@@ -88,6 +88,22 @@ Sheets access, then writes `~/.config/google-docs-mcp/token.json`. That
 token refreshes itself; you shouldn't need to do this again unless the
 set of scopes changes (as it did on 2026-09-02 when Sheets was added).
 
+### Upgrading from a Docs-only install
+
+If your installation predates 2026-09-02, the Google Cloud project you
+set up in §1 only has the Docs API enabled. Sheets calls will fail with
+`SERVICE_DISABLED (Google Sheets API has not been used in project N
+before or it is disabled)` — the OAuth token is fine, the project isn't.
+Two steps, in order:
+
+1. **APIs & Services → Library → Google Sheets API → Enable** in the
+   same project you used for Docs.
+2. Re-run `google-docs-mcp-cli auth`. The consent screen will now list
+   both Docs and Sheets. Pick the same Google account you used before.
+
+Two human steps, not one. Enabling the API and granting the OAuth scope
+are separate acts, and Google will not do either implicitly.
+
 ## Registering the server
 
 Claude Desktop and Claude Code keep separate MCP configuration. Register
