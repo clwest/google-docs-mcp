@@ -202,3 +202,44 @@ Only when all three of the following are true:
 
 If any of those is false, the answer is probably to configure a
 workflow, not to write a server.
+
+## Postscript — 2026-09-02, the Sheets half of the same gap
+
+Five days after the Docs work landed, the same shape of problem hit
+Sheets. A row in the "Remote_Sales_Target_List (CURRENT — tracker)"
+Sheet needed to be marked `Replied` and one new row added. The stock
+Drive connector could not do it; every previous "update" of a tracker
+Sheet had actually rebuilt the file and re-uploaded it, and on
+2026-08-31 that mechanism produced four duplicate copies of an
+engineering tracker in Drive root before anyone noticed.
+
+**The wrong first move**, worth recording so it does not recur: when
+the cell write failed, the built-in browser pane in the Claude desktop
+app got reached for. That pane is signed out of every Google account
+and asking for a password across a chat is not the model. It stopped at
+an account picker. The right tool was this server; nothing external.
+
+**What the fix cost.** One session. Three tools added
+(`sheets_get_range`, `sheets_update_range`, `sheets_append_row`), one
+file (`sheets_ops.py`), one refactor to share credential loading
+between Docs and Sheets, one scope added to `SCOPES`, and one
+human-in-the-loop consent re-click. Total server surface went from
+three tools to six on the same OAuth token. Nothing renamed, nothing
+moved.
+
+**What was deliberately not built.** `sheets_clear_range`,
+`sheets_delete_row`, `sheets_delete_tab`, `sheets_create_spreadsheet`,
+`sheets_create_tab`. A tool that can blank a tracker will one day blank
+a tracker; the workflow does not need any of them, and their absence is
+now written into the README as a promise, not an omission.
+
+**The wider point for the offer.** Two worked examples now sit under
+"you might not need anything more than a Claude subscription and a
+Drive." Search, read, create, move, share — Drive connector. Edit the
+body of a Doc that already exists — this server, three tools,
+`google-docs-mcp` on 2026-08-28. Edit cells in a Sheet that already
+exists — this server, three more tools, same day-of-work extension on
+2026-09-02. The pattern: most of Drive works out of the box, editing
+what already exists needs one small custom piece per file type, and
+that piece stays small because deleting and creating live in the
+existing tools.

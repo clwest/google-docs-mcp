@@ -1,4 +1,4 @@
-"""OAuth for the Google Docs API.
+"""OAuth for the Google Docs and Google Sheets APIs.
 
 Token and client_secret live in ~/.config/google-docs-mcp/ — never inside the
 repo. `.gitignore` also blocks credential-shaped names in the project tree, so
@@ -16,11 +16,15 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-# `documents` is deliberate. `drive.file` only sees files the app itself
-# created, which defeats the point of an "edit an existing document" server.
-# The README says plainly that this grants read/write to all of the user's
-# Google Docs — that trade-off is real, name it, don't hide it.
-SCOPES = ["https://www.googleapis.com/auth/documents"]
+# `documents` and `spreadsheets` are deliberate. `drive.file` only sees files
+# the app itself created, which defeats the point of an "edit an existing
+# document / spreadsheet" server. The README says plainly that this grants
+# read/write to all of the user's Google Docs AND Sheets — that trade-off is
+# real, name it, don't hide it.
+SCOPES = [
+    "https://www.googleapis.com/auth/documents",
+    "https://www.googleapis.com/auth/spreadsheets",
+]
 
 CONFIG_DIR = Path(
     os.environ.get("GOOGLE_DOCS_MCP_CONFIG_DIR")
@@ -75,6 +79,10 @@ def get_credentials() -> Credentials:
     Never triggers a browser flow — the MCP server runs headless under
     Claude Desktop / Claude Code. First-time consent has to happen in the
     CLI harness (`google-docs-mcp-cli auth`).
+
+    A token stored before the Sheets scope was added will load with only
+    the Docs scope, and every Sheets call will fail 403 until
+    `google-docs-mcp-cli auth` is re-run.
     """
     creds = _load_credentials()
     if creds is None:
@@ -85,9 +93,21 @@ def get_credentials() -> Credentials:
     return creds
 
 
-def get_docs_service():
-    """Build a Google Docs API client with cached OAuth credentials."""
+def _build_service(api_name: str, api_version: str):
+    """Build a Google API client with cached OAuth credentials.
+
+    cache_discovery=False avoids a noisy warning under Python 3.11+ about the
+    file-based discovery cache; there is no benefit to it here.
+    """
     creds = get_credentials()
-    # cache_discovery=False avoids a noisy warning under Python 3.11+
-    # about the file-based discovery cache; there is no benefit to it here.
-    return build("docs", "v1", credentials=creds, cache_discovery=False)
+    return build(api_name, api_version, credentials=creds, cache_discovery=False)
+
+
+def get_docs_service():
+    """Build a Google Docs API client."""
+    return _build_service("docs", "v1")
+
+
+def get_sheets_service():
+    """Build a Google Sheets API client."""
+    return _build_service("sheets", "v4")
